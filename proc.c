@@ -7,6 +7,7 @@
 #include "proc.h"
 #include "spinlock.h"
 
+
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
@@ -25,6 +26,20 @@ pinit(void)
 {
   initlock(&ptable.lock, "ptable");
 }
+
+void
+defaultHandler(int signum)
+{
+  cprintf("A signal %d was accepted by process %d", signum, proc->pid);
+}
+
+void
+initHandlers(struct proc * p) {
+  int i;
+  for (i = 0; i < NUMSIG; i++)
+    p->signals[i] = &defaultHandler;
+}
+
 
 //PAGEBREAK: 32
 // Look in the process table for an UNUSED proc.
@@ -102,7 +117,7 @@ userinit(void)
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
-
+  initHandlers(p);
   // this assignment to p->state lets other cores
   // run this process. the acquire forces the above
   // writes to be visible, and the lock is also needed
@@ -113,6 +128,7 @@ userinit(void)
 
   release(&ptable.lock);
 }
+
 
 // Grow current process's memory by n bytes.
 // Return 0 on success, -1 on failure.
@@ -170,6 +186,11 @@ fork(void)
   safestrcpy(np->name, proc->name, sizeof(proc->name));
 
   pid = np->pid;
+
+
+  for (i = 0; i < NUMSIG; i++)
+    np->signals[i] = proc-> signals[i]; //DEEP COPY SIGNALS FROM PARENT
+
 
   acquire(&ptable.lock);
 
@@ -446,6 +467,7 @@ kill(int pid)
   release(&ptable.lock);
   return -1;
 }
+
 
 //PAGEBREAK: 36
 // Print a process listing to console.  For debugging.
