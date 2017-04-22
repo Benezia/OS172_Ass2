@@ -105,6 +105,7 @@ int             pipewrite(struct pipe*, char*, int);
 
 //PAGEBREAK: 16
 // proc.c
+int 			sigsend(int, int);
 sighandler_t 	signal(int, sighandler_t);
 void            exit(void);
 int             fork(void);

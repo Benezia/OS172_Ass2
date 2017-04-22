@@ -45,6 +45,26 @@ sighandler_t signal (int signum, sighandler_t handler){
   return oldHandler;
 }
 
+int sigsend(int pid, int signum) {
+  if (signum < 0 || signum > 31)
+    return -1;
+  acquire(&ptable.lock);
+  struct proc *p = 0;
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+    if (p->pid == pid)
+      break;
+  }
+  release(&ptable.lock);
+
+  if (p == 0)
+    return -1;
+
+  int signumBit = 1;
+  signumBit = signumBit << signum;
+  p->pending = p->pending | signumBit;
+  return 0;
+}
+
 
 //PAGEBREAK: 32
 // Look in the process table for an UNUSED proc.

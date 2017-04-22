@@ -8,12 +8,23 @@
 #include "proc.h"
 
 
+int sys_sigsend(void){
+  int pid;
+  int signum;
+  if(argint(0, &pid) < 0)
+    return -1;
+  if(argint(1, &signum) < 0)
+    return -1;
+
+  return sigsend(pid, signum);
+}
+
 int sys_signal(void){
   int signum;
   int handle;
   if(argint(0, &signum) < 0)
     return -1;
-  if(argint(0, &handle) < 0)
+  if(argint(1, &handle) < 0)
     return -1;
 
   return (int)signal(signum,(sighandler_t)handle);
