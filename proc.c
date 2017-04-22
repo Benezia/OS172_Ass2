@@ -27,17 +27,22 @@ pinit(void)
   initlock(&ptable.lock, "ptable");
 }
 
-void
-defaultHandler(int signum)
-{
+void defaultHandler(int signum){
   cprintf("A signal %d was accepted by process %d", signum, proc->pid);
 }
 
-void
-initHandlers(struct proc * p) {
+void initHandlers(struct proc * p){
   int i;
   for (i = 0; i < NUMSIG; i++)
     p->signals[i] = &defaultHandler;
+}
+
+sighandler_t signal (int signum, sighandler_t handler){
+  if (signum < 0 || signum > 31)
+    return (sighandler_t)-1;
+  sighandler_t oldHandler = proc->signals[signum];
+  proc->signals[signum] = handler;
+  return oldHandler;
 }
 
 

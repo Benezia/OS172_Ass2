@@ -7,9 +7,22 @@
 #include "mmu.h"
 #include "proc.h"
 
+
+int sys_signal(void){
+  int signum;
+  int handle;
+  if(argint(0, &signum) < 0)
+    return -1;
+  if(argint(0, &handle) < 0)
+    return -1;
+
+  return (int)signal(signum,(sighandler_t)handle);
+}
+
+
 int
 sys_fork(void)
-{
+{ 
   return fork();
 }
 

@@ -9,6 +9,8 @@ struct spinlock;
 struct sleeplock;
 struct stat;
 struct superblock;
+typedef void (*sighandler_t)(int);
+
 
 // bio.c
 void            binit(void);
@@ -103,6 +105,7 @@ int             pipewrite(struct pipe*, char*, int);
 
 //PAGEBREAK: 16
 // proc.c
+sighandler_t 	signal(int, sighandler_t);
 void            exit(void);
 int             fork(void);
 int             growproc(int);

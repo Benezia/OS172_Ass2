@@ -48,6 +48,7 @@ struct context {
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 #define NUMSIG 32
+typedef void (*sighandler_t)(int);
 
 // Per-process state
 struct proc {
@@ -65,7 +66,7 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
   int pending;                 // An array of bits to support on switched signals
-  void * signals[NUMSIG];       // Array of signal handlers 
+  sighandler_t signals[NUMSIG];       // Array of signal handlers 
 };
 
 // Process memory is laid out contiguously, low addresses first:
