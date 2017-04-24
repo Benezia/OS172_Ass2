@@ -25,7 +25,26 @@ alltraps:
 
   # Return falls through to trapret...
 .globl trapret
+
+
 trapret:
+ 
+  pushal
+  call getLitSignal
+  cmpl $0xffffffff,%eax
+  je cont
+
+    mov %eax,%ebx  # ebx holds sigNum
+    pushal
+    push %eax
+    call checkSignalHandler
+    pop %eax
+    popal
+
+  cont:  
+  popal
+
+
   popal
   popl %gs
   popl %fs

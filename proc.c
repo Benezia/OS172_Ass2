@@ -7,7 +7,7 @@
 #include "proc.h"
 #include "spinlock.h"
 
-/////////////////////////////
+
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
@@ -28,7 +28,7 @@ pinit(void)
 }
 
 void defaultHandler(int signum){
-  cprintf("A signal %d was accepted by process %d", signum, proc->pid);
+  cprintf("A signal %d was accepted by process %d\n", signum, proc->pid);
 }
 
 void initHandlers(struct proc * p){
@@ -42,6 +42,7 @@ sighandler_t signal (int signum, sighandler_t handler){
     return (sighandler_t)-1;
   sighandler_t oldHandler = proc->signals[signum];
   proc->signals[signum] = handler;
+  cprintf("placed func %p in %d instead of %p", handler, signum, oldHandler);
   return oldHandler;
 }
 
@@ -313,6 +314,41 @@ wait(void)
     sleep(proc, &ptable.lock);  //DOC: wait-sleep
   }
 }
+
+void testSignal(int sigNum){
+  cprintf("%d (with parent %d) recived signal num: %d\n",proc->pid,proc->parent->pid,sigNum);
+}
+
+int checkSignalHandler(int sigNum){
+  
+  if (proc->signals[sigNum] == &defaultHandler){
+    defaultHandler(sigNum);
+    return 0;
+  }
+
+  return (int)proc->signals[sigNum];
+}
+
+int getLitSignal(void){
+ 
+  if (proc == 0)
+    return -1;
+
+  int signalList = proc->pending;
+  int i;
+  int mask = 1;
+
+  for (i = 0;i<NUMSIG;i++){
+    if (signalList & 1){
+
+      proc->pending = proc->pending & ~(mask << i);
+      return i;
+    }
+    signalList = signalList >> 1;
+  }
+
+  return -1;
+ }
 
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
