@@ -67,6 +67,8 @@ struct proc {
   char name[16];               // Process name (debugging)
   int pending;                 // An array of bits to support on switched signals
   sighandler_t signals[NUMSIG];       // Array of signal handlers 
+  uint alarmStart;              // tick number when alarm system call was received
+  uint tickAmount;             // # of ticks to wait before alarm is set 
 };
 
 // Process memory is laid out contiguously, low addresses first:

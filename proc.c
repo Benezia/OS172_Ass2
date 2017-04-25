@@ -21,10 +21,20 @@ extern void trapret(void);
 
 static void wakeup1(void *chan);
 
-void
-pinit(void)
-{
+void pinit(void){
   initlock(&ptable.lock, "ptable");
+}
+
+
+int alarm(int tickTime){ 
+  if (tickTime == 0) {
+    proc->pending &= ~(1<<14);
+    return 0;
+  }
+  proc->pending |= (1<<14);
+  proc->alarmStart = ticks;
+  proc->tickAmount = tickTime;
+  return 0;
 }
 
 void defaultHandler(int signum){
@@ -85,7 +95,8 @@ int getLitSignal(void){
 
   for (i = 0;i<NUMSIG;i++){
     if (signalList & 1){
-
+      if (i == 14 && proc->alarmStart + proc->tickAmount > ticks)
+        continue;
       proc->pending = proc->pending & ~(mask << i);
       return i;
     }

@@ -36,6 +36,13 @@ int sys_sigreturn(void) {
   return sigreturn();
 }
 
+int sys_alarm(void) {
+  int tickTime;
+  if(argint(1, &tickTime) < 0)
+    return -1;
+  return alarm(tickTime);
+}
+
 int
 sys_fork(void)
 { 
