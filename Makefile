@@ -27,6 +27,7 @@ OBJS = \
 	trap.o\
 	uart.o\
 	vectors.o\
+	umsigret.o\
 	vm.o\
 
 # Cross-compiling (e.g., on Mac OS X)
@@ -182,6 +183,12 @@ fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
 
 -include *.d
+
+umsigret: umsigret.S
+	$(CC) $(CFLAGS) -nostdinc -I. -c umsigret.S
+	$(LD) $(LDFLAGS) -N -e start -Ttext 0 -o umsigret.out umsigret.o
+	$(OBJCOPY) -S -O binary umsigret.out umsigret
+	$(OBJDUMP) -S umsigret.o > umsigret.asm
 
 clean: 
 	rm -f *.tex *.dvi *.idx *.aux *.log *.ind *.ilg \

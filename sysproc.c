@@ -8,6 +8,8 @@
 #include "proc.h"
 
 
+
+
 int sys_sigsend(void){
   int pid;
   int signum;
@@ -30,6 +32,9 @@ int sys_signal(void){
   return (int)signal(signum,(sighandler_t)handle);
 }
 
+int sys_sigreturn(void) {
+  return sigreturn();
+}
 
 int
 sys_fork(void)

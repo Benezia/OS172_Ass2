@@ -107,6 +107,7 @@ int             pipewrite(struct pipe*, char*, int);
 // proc.c
 int 			sigsend(int, int);
 sighandler_t 	signal(int, sighandler_t);
+int 			sigreturn(void);
 void            exit(void);
 int             fork(void);
 int             growproc(int);

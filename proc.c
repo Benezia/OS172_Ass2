@@ -66,6 +66,69 @@ int sigsend(int pid, int signum) {
   return 0;
 }
 
+int sigreturn(void) {
+  proc->tf->esp += 4; //Removes signum from stack
+  struct trapframe *trapFrameToRestore = (struct trapframe*)proc->tf->esp;
+  *proc->tf = *trapFrameToRestore;
+  return 0;
+}
+
+//======== HELPER SIGNAL FUNCTIONS =========
+
+int getLitSignal(void){
+  if (proc == 0)
+    return -1;
+
+  int signalList = proc->pending;
+  int i;
+  int mask = 1;
+
+  for (i = 0;i<NUMSIG;i++){
+    if (signalList & 1){
+
+      proc->pending = proc->pending & ~(mask << i);
+      return i;
+    }
+    signalList = signalList >> 1;
+  }
+
+  return -1;
+ }
+
+extern void* start_sigreturn_label;
+extern void* end_sigreturn_label;
+
+void handleSignal() {
+  int litSignal = getLitSignal();
+  if (litSignal == -1)
+    return;
+
+  if (proc->signals[litSignal] == &defaultHandler){
+    defaultHandler(litSignal);
+    return;
+  }
+  sighandler_t handler = proc->signals[litSignal];
+
+  uint origESP = proc->tf->esp;                       //Backup the original esp
+  int funcSize = (uint)&end_sigreturn_label - (uint)&start_sigreturn_label;
+  proc->tf->esp -= funcSize;
+  memmove((int*)(proc->tf->esp), (void*)&start_sigreturn_label, funcSize);
+  uint funcAddr = proc->tf->esp;
+
+  proc->tf->esp -= sizeof(struct trapframe);          //Make room for trapframe backup
+  *((struct trapframe*)proc->tf->esp) = *(proc->tf);  //BACKUP TRAPFRAME ON STACK
+  ((struct trapframe*)proc->tf->esp)->esp = origESP;  //Backup the original esp
+  proc->tf->esp -= 4;                                 //size of signum
+  *((uint*)proc->tf->esp) = litSignal;                //Put signum on stack
+  proc->tf->esp -= 4;                                 //size of handler ptr
+  *((uint*)proc->tf->esp) = funcAddr;                 //Put sigreturn UM address on stack
+  proc->tf->eip = (uint)handler;                      //rewire eip to handler address
+}
+
+
+//======== END OF HELPER SIGNAL FUNCTIONS =========
+
+
 
 //PAGEBREAK: 32
 // Look in the process table for an UNUSED proc.
@@ -315,40 +378,10 @@ wait(void)
   }
 }
 
-void testSignal(int sigNum){
-  cprintf("%d (with parent %d) recived signal num: %d\n",proc->pid,proc->parent->pid,sigNum);
+void testSignal(int eax){
+  cprintf("eax: %d\n", eax);
 }
 
-int checkSignalHandler(int sigNum){
-  
-  if (proc->signals[sigNum] == &defaultHandler){
-    defaultHandler(sigNum);
-    return 0;
-  }
-
-  return (int)proc->signals[sigNum];
-}
-
-int getLitSignal(void){
- 
-  if (proc == 0)
-    return -1;
-
-  int signalList = proc->pending;
-  int i;
-  int mask = 1;
-
-  for (i = 0;i<NUMSIG;i++){
-    if (signalList & 1){
-
-      proc->pending = proc->pending & ~(mask << i);
-      return i;
-    }
-    signalList = signalList >> 1;
-  }
-
-  return -1;
- }
 
 //PAGEBREAK: 42
 // Per-CPU process scheduler.

@@ -28,32 +28,7 @@ alltraps:
 
 
 trapret:
- 
-
-  call getLitSignal
-  cmpl $0xffffffff,%eax
-  je after_handeling_signals
-
-    mov %eax,%ebx  # ebx holds sigNum
-    push %ebx
-    push %eax
-    call checkSignalHandler  
-    pop %eax      # ans for checkSignalHandler invokation
-    pop %ebx
-
-    cmp $0,%eax
-    je after_handeling_signals
-      ###################################################
-
-
-
-
-
-
-      ###################################################
-  after_handeling_signals:  
-
-
+  call handleSignal      # Pushes trapframe to stack and updates eip
   popal
   popl %gs
   popl %fs
