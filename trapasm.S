@@ -29,20 +29,29 @@ alltraps:
 
 trapret:
  
-  pushal
+
   call getLitSignal
   cmpl $0xffffffff,%eax
-  je cont
+  je after_handeling_signals
 
     mov %eax,%ebx  # ebx holds sigNum
-    pushal
+    push %ebx
     push %eax
-    call checkSignalHandler
-    pop %eax
-    popal
+    call checkSignalHandler  
+    pop %eax      # ans for checkSignalHandler invokation
+    pop %ebx
 
-  cont:  
-  popal
+    cmp $0,%eax
+    je after_handeling_signals
+      ###################################################
+
+
+
+
+
+
+      ###################################################
+  after_handeling_signals:  
 
 
   popal

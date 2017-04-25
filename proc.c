@@ -42,7 +42,7 @@ sighandler_t signal (int signum, sighandler_t handler){
     return (sighandler_t)-1;
   sighandler_t oldHandler = proc->signals[signum];
   proc->signals[signum] = handler;
-  cprintf("placed func %p in %d instead of %p", handler, signum, oldHandler);
+  //cprintf("placed func %p in %d instead of %p", handler, signum, oldHandler);
   return oldHandler;
 }
 

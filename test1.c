@@ -21,10 +21,10 @@ int main(int argc, char *argv[]){
 
 	int pid;
 	if ((pid = fork()) == 0) {
-	//	signal(10, printHand);
+		signal(10, printHand);
 		fib(40);
 	} else {
-		fib(20);
+		fib(40);
 		sigsend(pid,10);
 		wait();
 	}
