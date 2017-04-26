@@ -2,7 +2,7 @@
 #include "stat.h"
 #include "user.h"
 #include "fs.h"
-
+#include "uthread.h"
 
 void fib(int n) {
   if (n <= 1)
@@ -18,21 +18,12 @@ void printHand(int sigNum){
 
 
 int main(int argc, char *argv[]){
+	int i;
+	uthread_init();
 
-	int pid;
-	if ((pid = fork()) == 0) {
-		//signal(10, &printHand);
-		printf(1,"child proc pid is: %d\n",getpid());
-		alarm(20);
-		sleep(50);	
-		alarm(50);
-		sleep(500);	
-	} else {
-		sleep(500);	
-	//	sigsend(pid,14);
-		wait();
+	for (i=0;i<1000;i++){
+		sleep(1);
 	}
-
 	exit();
 	return 0;
 } 
