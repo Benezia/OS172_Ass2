@@ -21,12 +21,15 @@ int main(int argc, char *argv[]){
 
 	int pid;
 	if ((pid = fork()) == 0) {
-		signal(10, &printHand);
-		//alarm(20);
+		//signal(10, &printHand);
+		printf(1,"child proc pid is: %d\n",getpid());
+		alarm(20);
+		sleep(50);	
+		alarm(50);
 		sleep(500);	
 	} else {
 		sleep(500);	
-		sigsend(pid,10);
+	//	sigsend(pid,14);
 		wait();
 	}
 

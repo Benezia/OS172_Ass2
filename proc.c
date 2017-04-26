@@ -95,8 +95,10 @@ int getLitSignal(void){
 
   for (i = 0;i<NUMSIG;i++){
     if (signalList & 1){
-      if (i == 14 && proc->alarmStart + proc->tickAmount > ticks)
+      if (i == 14 && proc->alarmStart + proc->tickAmount > ticks){
+        signalList = signalList >> 1;
         continue;
+      }
       proc->pending = proc->pending & ~(mask << i);
       return i;
     }

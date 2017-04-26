@@ -38,7 +38,7 @@ int sys_sigreturn(void) {
 
 int sys_alarm(void) {
   int tickTime;
-  if(argint(1, &tickTime) < 0)
+  if(argint(0, &tickTime) < 0)
     return -1;
   return alarm(tickTime);
 }
