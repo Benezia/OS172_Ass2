@@ -19,85 +19,63 @@ void alarmHandler(int sigNum){
 	uthread_schedule();
 }
 
-void backUpTrapframe(struct threadtf *tf) {
-	// ct->threadtf -> *tf;
-{
 
-// void backUpTrapframe(){
+//FOR DEBUGGING:
+void printTrapframe() {
+	  printf(1,"Thread TF Registers:\n");
+	  printf(1,"\tebp: %x\n", ct->tf.ebp);
+	  printf(1,"\teip: %x\n", ct->tf.eip);
+	  printf(1,"\tesp: %x\n", ct->tf.esp);
+	  printf(1,"\tedi: %x\n", ct->tf.edi);
+	  printf(1,"\tesi: %x\n", ct->tf.esi);
+	  printf(1,"\tebx: %x\n", ct->tf.ebx);
+	  printf(1,"\tedx: %x\n", ct->tf.edx);
+	  printf(1,"\tecx: %x\n", ct->tf.ecx);
+	  printf(1,"\teax: %x\n", ct->tf.eax);
+}
 
-	// asm ("movl %%ebp, %0;"
-	//      :"=r"(ct->ebp) 
-	//      :
-	//      :);
+void backUpTrapframe(){
 
-	// asm ("movl %%esp, %0;"
-	//      :"=r"(ct->esp) 
-	//      :
-	//      :);
+	asm ("movl %%ebp, %0;"
+	     :"=r"(ct->tf.ebp));
 
-	// asm ("movl %%edi, %0;"
-	//      :"=r"(ct->edi) 
-	//      :
-	//      :);
+	asm ("movl %%esp, %0;"
+	     :"=r"(ct->tf.esp));
 
-	// asm ("movl %%esi, %0;"
-	//      :"=r"(ct->esi) 
-	//      :
-	//      :);
+	asm ("movl %%edi, %0;"
+	     :"=r"(ct->tf.edi));
+
+	asm ("movl %%esi, %0;"
+	     :"=r"(ct->tf.esi));
 
 	// asm ("movl %%eax, %0;"
-	//      :"=r"(ct->eax) 
-	//      :
-	//      :);
-
-
+	//      :"=r"(ct->tf.eax));
 
 	// asm ("movl %%ebx, %0;"
-	//      :"=r"(ct->ebx) 
-	//      :
-	//      :);
+	//      :"=r"(ct->tf.ebx));
 
 	// asm ("movl %%ecx, %0;"
-	//      :"=r"(ct->ecx));
+	//      :"=r"(ct->tf.ecx));
 
 	// asm ("movl %%edx, %0;"
-	//      :"=r"(ct->edx) 
-	//      :
-	//      :);
+	//      :"=r"(ct->tf.edx));
 
     // asm ("get_eip: mov (%%esp),%%eax;"
     //      "ret;"
     //      "call get_eip;"
     //      "mov %%eax,%0;"
-	   //   :"=r"(ct->eip) 
-	   //   :
-	   //   :);
+	//   	:"=r"(ct->tf.eip));
   
-  // printf(1,"thread trapframe registers:%d %d %d %d %d %d %d %d\n", ct->eax,ct->ebx,ct->ecx,ct->edx,ct->esi,
-  //                                                 ct->edi,ct->esp,ct->ebp);
- 	// // int i =2;
-
- //  printf(1,"thread trapframe registers:%d \n", ct->eip);
-       
- 
-
-//   getpid();
-
-// }
+	printTrapframe();
+   	getpid();
+}
 
 void uthread_schedule(){
 	//printf(1,"sched is on like donkey kong !\n");
 
 
-
-
-
-
-
-
-	//backUpTrapframe();
-	asmTrapframeBackup();
-	//	printf(1,"sched is on like donkey kong111111 !\n");
+	backUpTrapframe();
+	//printf(1,"sched is on like donkey kong111111 !\n");
 	alarm(UTHREAD_QUANTA);
 }
 
@@ -126,14 +104,14 @@ int uthread_create(start_func threadEntry, void* arg){
 	ct = t;
 	unsigned char* tstack = (unsigned char*)malloc(STACKSZ);
 
-	(t->threadtf).tid = nexttid++;
-	// (t->threadtf).esp = (uint)tstack + STACKSZ - 1;
-	// (t->threadtf).ebp = (uint)tstack + STACKSZ - 1;
-	// (t->threadtf).eip = (uint)threadEntry;
+	t->tid = nexttid++;
+	(t->tf).esp = (uint)tstack + STACKSZ - 1;
+	(t->tf).ebp = (uint)tstack + STACKSZ - 1;
+	(t->tf).eip = (uint)threadEntry;
 	t->stack = tstack;
 
-	// t->esp -= 4;
-	// *((int *)t->esp) = (int)&uthread_exit;
+	(t->tf).esp -= 4;
+	 *((int *)(t->tf).esp) = (int)&uthread_exit;
 	
 
 	threadTable[ttableLoc] = t;

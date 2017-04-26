@@ -27,9 +27,7 @@ struct thread{
 	struct threadtf tf;
 };
 
-void backUpTrapframe(struct threadtf *tf) ;
-
-void asmTrapframeBackup();
+void backUpTrapframe() ;
 int uthread_create(start_func, void*);
 void uthread_schedule(void);
 void alarmHandler(int);
