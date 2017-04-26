@@ -75,6 +75,9 @@ sys_kill(void)
 int
 sys_getpid(void)
 {
+  cprintf("ker registers:%d %d %d %d %d %d %d %d \n", proc->tf->eax,proc->tf->ebx,proc->tf->ecx,proc->tf->edx,proc->tf->esi,
+                                                  proc->tf->edi,proc->tf->esp,proc->tf->ebp);
+   // cprintf("ker registers:%d\n", proc->tf->ebp);
   return proc->pid;
 }
 
