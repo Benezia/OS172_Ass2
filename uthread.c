@@ -19,6 +19,12 @@ void alarmHandler(int sigNum){
 	uthread_schedule();
 }
 
+void * get_eip () {
+	//This function returns the return address of the get_eip
+	return __builtin_return_address(0); //info: https://gcc.gnu.org/onlinedocs/gcc/Return-Address.html
+	//idea taken from: 
+	//http://stackoverflow.com/questions/18350021/how-to-print-exact-value-of-the-program-counter-in-c
+}
 
 //FOR DEBUGGING:
 void printTrapframe() {
@@ -36,36 +42,35 @@ void printTrapframe() {
 
 void backUpTrapframe(){
 
-	asm ("movl %%ebp, %0;"
-	     :"=r"(ct->tf.ebp));
+    register int ebpVal asm("ebp");
+	ct->tf.ebp = ebpVal; //WORKS!
 
-	asm ("movl %%esp, %0;"
-	     :"=r"(ct->tf.esp));
+    register int espVal asm("esp");
+	ct->tf.esp = espVal; //WORKS!
 
-	asm ("movl %%edi, %0;"
-	     :"=r"(ct->tf.edi));
+	register int ediVal asm("edi");
+	ct->tf.edi = ediVal; //WORKS!
 
-	asm ("movl %%esi, %0;"
-	     :"=r"(ct->tf.esi));
+	register int esiVal asm("esi");
+	ct->tf.esi = esiVal; //WORKS!
 
-	// asm ("movl %%eax, %0;"
-	//      :"=r"(ct->tf.eax));
+ 	//register int eaxVal asm("eax");
+	//ct->tf.eax = eaxVal; //DOESNT WORK, always zero, stops UM skedular from iterating.
 
-	// asm ("movl %%ebx, %0;"
-	//      :"=r"(ct->tf.ebx));
+ 	//register int ebxVal asm("ebx");
+	//ct->tf.ebx = ebxVal; //WORKS but causes trap13 somewhere.
 
-	// asm ("movl %%ecx, %0;"
-	//      :"=r"(ct->tf.ecx));
+ 	//register int ecxVal asm("ecx");
+	//ct->tf.ecx = ecxVal;  //DOESNT WORK, shows a completely different number from kernel and causes trap14.
 
-	// asm ("movl %%edx, %0;"
-	//      :"=r"(ct->tf.edx));
+ 	//register int edxVal asm("edx");
+	//ct->tf.edx = edxVal; //might be working (kernel edx is always zero), causes trap14.
 
-    // asm ("get_eip: mov (%%esp),%%eax;"
-    //      "ret;"
-    //      "call get_eip;"
-    //      "mov %%eax,%0;"
-	//   	:"=r"(ct->tf.eip));
-  
+    printf(1,"%p\n", get_eip()); //should be x
+    printf(1,"%p\n", get_eip()); //should be x+4 (instead its x)
+    printf(1,"%p\n", get_eip()); //should be x+8 (instead its x)
+	ct->tf.eip = (uint)get_eip;  //very different result from kernel yet doesnt causes any traps.
+
 	printTrapframe();
    	getpid();
 }
