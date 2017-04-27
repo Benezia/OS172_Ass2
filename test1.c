@@ -11,6 +11,17 @@ void fib(int n) {
   fib(n-2);
 }
 
+
+void thread2Main(void* args){
+
+	int i;
+	
+	for (i=0;i <100; i++){
+		printf(1,"thread 2 is running now\n");
+	}
+}
+
+
 void printHand(int sigNum){
 	printf(1,"printHand handler was invoked \n");
 
@@ -19,12 +30,13 @@ void printHand(int sigNum){
 
 int main(int argc, char *argv[]){
 	
-	int i;
+	//int i;
 	uthread_init();
 
-	for (i=0;i<1000;i++){
-		sleep(1);
-	}
+	uthread_create(&thread2Main, 0);
+
+	fib(40);
+
 	exit();
 	return 0;
 } 
