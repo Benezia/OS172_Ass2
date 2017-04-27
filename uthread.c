@@ -37,22 +37,37 @@ void uthread_exit(){
 
 }
 
+//FOR DEBUGGING:
+void printTrapframe() {
+	  printf(1,"\tebx: %x\n", ct->tf.ebx);
+	  printf(1,"\tedx: %x\n", ct->tf.edx);
+	  printf(1,"\tecx: %x\n", ct->tf.ecx);
+	  printf(1,"\teax: %x\n", ct->tf.eax);
+	  printf(1,"\teip: %x\n\n", ct->tf.eip);
+}
+
+
 void uthread_schedule(){
-	printf(1,"sched is on like donkey kong- start !\n");
+	//printf(1,"sched is on like donkey kong- start !\n");
 
 	int nextThread;
+	int espSnapShot;
 	register uint espVal asm("esp");
-	espVal += 16;
- 	ct->tf = *((struct threadtrapframe*)espVal);
+	espSnapShot = espVal;	//because espVal is the actual register (shouldn't be changed)
+	espSnapShot += 36;		//24 for unknown reasons +4 for sigret ptr +4 for signum +4 for handler overloading
+ 	ct->tf = *((struct threadtrapframe*)espSnapShot);	//backup current thread trapframe
+	printf(1,"OLD Thread TF Registers:\n");
+ 	printTrapframe();
  	ct->state = READY;
 
  	nextThread = chooseNextThread();
  	ct = &threadTable[nextThread];
-
- 	*((struct threadtrapframe*)espVal) = ct->tf;
+	printf(1,"NEW Thread TF Registers:\n");
+ 	printTrapframe();
+ 	*((struct threadtrapframe*)espSnapShot) = ct->tf;	//load next thread trapframe
  	ct->state = RUNNING;
 
-	printf(1,"sched is on like donkey kong- end !\n");
+	//printf(1,"sched is on like donkey kong- end !\n");
 	alarm(UTHREAD_QUANTA);
 }
 
@@ -74,7 +89,8 @@ int uthread_create(start_func threadEntry, void* arg){
 
 	int ttableLoc;
 	ttableLoc = getNextSpot();
-	printf(1,"next spot in thread table is: %d\n",ttableLoc);
+	//printf(1,"next spot in thread table is: %d\n",ttableLoc);
+	printf(1,"entry location (eip): %p\n",threadEntry);
 	struct thread* t = &threadTable[ttableLoc] ;
 
 	if (ttableLoc == -1)

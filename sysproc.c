@@ -72,25 +72,9 @@ sys_kill(void)
   return kill(pid);
 }
 
-
-//debugging
-void printTrapframe() {
-    cprintf("Proc TF Registers:\n");
-    cprintf("\tebp: %x\n", proc->tf->ebp);
-    cprintf("\teip: %x\n", proc->tf->eip);
-    cprintf("\tesp: %x\n", proc->tf->esp);
-    cprintf("\tedi: %x\n", proc->tf->edi);
-    cprintf("\tesi: %x\n", proc->tf->esi);
-    cprintf("\tebx: %x\n", proc->tf->ebx);
-    cprintf("\tedx: %x\n", proc->tf->edx);
-    cprintf("\tecx: %x\n", proc->tf->ecx);
-    cprintf("\teax: %x\n", proc->tf->eax);
-}
-
 int
 sys_getpid(void)
 {
-  printTrapframe();
   return proc->pid;
 }
 

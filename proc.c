@@ -75,11 +75,13 @@ int sigsend(int pid, int signum) {
   p->pending = p->pending | signumBit;
   return 0;
 }
-
+void printTrapframe();
 int sigreturn(void) {
   proc->tf->esp += 4; //Removes signum from stack
   struct trapframe *trapFrameToRestore = (struct trapframe*)proc->tf->esp;
   *proc->tf = *trapFrameToRestore;
+  cprintf("KERNEL TF Registers (after invokation):\n");
+  printTrapframe();
   return 0;
 }
 
@@ -111,6 +113,16 @@ int getLitSignal(void){
 extern void* start_sigreturn_label;
 extern void* end_sigreturn_label;
 
+
+void printTrapframe() {
+    cprintf("\tebx: %x\n", proc->tf->ebx);
+    cprintf("\tedx: %x\n", proc->tf->edx);
+    cprintf("\tecx: %x\n", proc->tf->ecx);
+    cprintf("\teax: %x\n", proc->tf->eax);
+    cprintf("\teip: %x\n\n", proc->tf->eip);
+}
+
+
 void handleSignal() {
   int litSignal = getLitSignal();
   if (litSignal == -1)
@@ -120,8 +132,9 @@ void handleSignal() {
     defaultHandler(litSignal);
     return;
   }
+  cprintf("KERNEL TF Registers (before invokation):\n");
+  printTrapframe();
   sighandler_t handler = proc->signals[litSignal];
-
   uint origESP = proc->tf->esp;                       //Backup the original esp
   int funcSize = (uint)&end_sigreturn_label - (uint)&start_sigreturn_label;
   proc->tf->esp -= funcSize;
@@ -129,6 +142,7 @@ void handleSignal() {
   uint funcAddr = proc->tf->esp;
 
   proc->tf->esp -= sizeof(struct trapframe);          //Make room for trapframe backup
+  cprintf("\t3. esp = %d\n",proc->tf->esp);
   *((struct trapframe*)proc->tf->esp) = *(proc->tf);  //BACKUP TRAPFRAME ON STACK
   ((struct trapframe*)proc->tf->esp)->esp = origESP;  //Backup the original esp
   proc->tf->esp -= 4;                                 //size of signum
