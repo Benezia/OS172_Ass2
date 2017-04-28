@@ -76,12 +76,15 @@ int sigsend(int pid, int signum) {
   return 0;
 }
 void printTrapframe();
+void extenededPrint();
 int sigreturn(void) {
   proc->tf->esp += 4; //Removes signum from stack
   struct trapframe *trapFrameToRestore = (struct trapframe*)proc->tf->esp;
   *proc->tf = *trapFrameToRestore;
-  cprintf("KERNEL TF Registers (after invokation):\n");
-  printTrapframe();
+  //cprintf("KERNEL TF Registers (after invokation):\n");
+  //extenededPrint();
+  //printTrapframe();
+  //cprintf("PRINT FINISHED:\n");
   return 0;
 }
 
@@ -119,9 +122,20 @@ void printTrapframe() {
     cprintf("\tedx: %x\n", proc->tf->edx);
     cprintf("\tecx: %x\n", proc->tf->ecx);
     cprintf("\teax: %x\n", proc->tf->eax);
-    cprintf("\teip: %x\n\n", proc->tf->eip);
+    cprintf("\teip: %x\n", proc->tf->eip);
+    cprintf("\tesp: %x\n", proc->tf->esp);
+    cprintf("\tebp: %x\n\n", proc->tf->ebp);
 }
-
+void extenededPrint() {
+    cprintf("\tss: %x\n", proc->tf->ss);
+    cprintf("\tcs: %x\n", proc->tf->cs);
+    cprintf("\tds: %x\n", proc->tf->ds);
+    cprintf("\tes: %x\n", proc->tf->es);
+    cprintf("\tfs: %x\n", proc->tf->fs);
+    cprintf("\tgs: %x\n", proc->tf->gs);
+    cprintf("\ttrapno: %x\n", proc->tf->trapno);
+    cprintf("\terr: %x\n", proc->tf->err);
+}
 
 void handleSignal() {
   int litSignal = getLitSignal();
@@ -132,8 +146,9 @@ void handleSignal() {
     defaultHandler(litSignal);
     return;
   }
-  cprintf("KERNEL TF Registers (before invokation):\n");
-  printTrapframe();
+  //cprintf("KERNEL TF Registers (before invokation):\n");
+  //extenededPrint();
+  //printTrapframe();
   sighandler_t handler = proc->signals[litSignal];
   uint origESP = proc->tf->esp;                       //Backup the original esp
   int funcSize = (uint)&end_sigreturn_label - (uint)&start_sigreturn_label;
@@ -142,7 +157,7 @@ void handleSignal() {
   uint funcAddr = proc->tf->esp;
 
   proc->tf->esp -= sizeof(struct trapframe);          //Make room for trapframe backup
-  cprintf("\t3. esp = %d\n",proc->tf->esp);
+
   *((struct trapframe*)proc->tf->esp) = *(proc->tf);  //BACKUP TRAPFRAME ON STACK
   ((struct trapframe*)proc->tf->esp)->esp = origESP;  //Backup the original esp
   proc->tf->esp -= 4;                                 //size of signum
@@ -162,9 +177,7 @@ void handleSignal() {
 // If found, change state to EMBRYO and initialize
 // state required to run in the kernel.
 // Otherwise return 0.
-static struct proc*
-allocproc(void)
-{
+static struct proc* allocproc(void) {
   struct proc *p;
   char *sp;
 
@@ -404,11 +417,6 @@ wait(void)
     sleep(proc, &ptable.lock);  //DOC: wait-sleep
   }
 }
-
-void testSignal(int eax){
-  cprintf("eax: %d\n", eax);
-}
-
 
 //PAGEBREAK: 42
 // Per-CPU process scheduler.

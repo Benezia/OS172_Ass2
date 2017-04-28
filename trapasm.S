@@ -26,7 +26,6 @@ alltraps:
   # Return falls through to trapret...
 .globl trapret
 
-
 trapret:
   call handleSignal      # Pushes trapframe to stack and updates eip
   popal

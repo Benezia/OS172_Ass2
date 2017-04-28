@@ -41,14 +41,14 @@ struct threadtrapframe {
 
 struct thread{
 	int tid;
-	unsigned char* stack[STACKSZ];
+	unsigned char* stack;
 	enum thread_state state;  
 	struct threadtrapframe tf;
 	int indexInThreadtable;
 	void* arg;
 };
 
-
+int uthred_self();
 int chooseNextThread();
 int uthread_create(start_func, void*);
 void uthread_schedule(void);
