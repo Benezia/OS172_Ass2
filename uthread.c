@@ -56,15 +56,16 @@ int uthread_sleep(int ticks) {
 
 
 void uthread_join(int tid){
-	// int i;
-	// for (int i = 0; i < MAX_UTHREADS; i++) {
-	// 	if (tid == threadTable[i].tid)
-	// 		break;
-	// }
-	// if (i == MAX_UTHREADS || threadTable[i].state == TERMINATED)
-		// return; //no match for tid or target state is terminated.
-
-	//TODO: ENTIRE JOIN METHOD
+	int i = 0;
+	for (i = 0; i < MAX_UTHREADS; i++) {
+		if (tid == threadTable[i].tid)
+			break;
+	}
+	if (i == MAX_UTHREADS || threadTable[i].state == TERMINATED)
+		return; //no match for tid or target state is terminated.
+	while (threadTable[i].state != TERMINATED) {
+		uthread_sleep(1);
+	}
 }
 
 

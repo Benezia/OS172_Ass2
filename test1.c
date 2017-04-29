@@ -52,6 +52,7 @@ int main(int argc, char *argv[]){
 	//uthread_create(&thread3Main, 0);
 	//signal(14,&alarmLooper);
 	//sigsend(getpid(),14);
+	uthread_join(1);
 	thread1Main();
 	//fib(40);
 	printf(1,"Main Exit \n");
