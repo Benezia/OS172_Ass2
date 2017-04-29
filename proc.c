@@ -84,7 +84,6 @@ int sigreturn(void) {
   //cprintf("KERNEL TF Registers (after invokation):\n");
   //extenededPrint();
   //printTrapframe();
-  //cprintf("PRINT FINISHED:\n");
   return 0;
 }
 
@@ -94,20 +93,16 @@ int getLitSignal(void){
   if (proc == 0)
     return -1;
 
-  int signalList = proc->pending;
   int i;
-  int mask = 1;
 
   for (i = 0;i<NUMSIG;i++){
-    if (signalList & 1){
-      if (i == 14 && proc->alarmStart + proc->tickAmount > ticks){
-        signalList = signalList >> 1;
+    int sigBit = 1 << i;
+    if (proc->pending & sigBit){
+      if (i == 14 && proc->alarmStart + proc->tickAmount > ticks)
         continue;
-      }
-      proc->pending = proc->pending & ~(mask << i);
+      proc->pending &= ~sigBit;
       return i;
     }
-    signalList = signalList >> 1;
   }
 
   return -1;

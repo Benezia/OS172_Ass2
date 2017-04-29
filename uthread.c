@@ -18,13 +18,14 @@ void initThreadTable(){
 
 
 int chooseNextThread(){
-
 	int i = 0;
 	int currloc = ct->indexInThreadtable + 1;
-
 	while (i<MAX_UTHREADS){
 		currloc = currloc%MAX_UTHREADS;
-		if (threadTable[currloc].state == READY){
+		if (threadTable[currloc].state == READY || (threadTable[currloc].state == BLOCKED
+												&&  threadTable[currloc].wakeUpTime <= uptime())){
+
+			threadTable[currloc].state = READY;
 			return currloc;
 		}
 		currloc++;
@@ -44,6 +45,29 @@ int getThreadCount() {
 }
 
 
+int uthread_sleep(int ticks) {
+	ct->wakeUpTime = ticks + uptime();
+	ct->state = BLOCKED;
+	sigsend(getpid(),SIGALRM);
+	while(ct->state != RUNNING);
+	return 0;
+}
+
+
+
+void uthread_join(int tid){
+	// int i;
+	// for (int i = 0; i < MAX_UTHREADS; i++) {
+	// 	if (tid == threadTable[i].tid)
+	// 		break;
+	// }
+	// if (i == MAX_UTHREADS || threadTable[i].state == TERMINATED)
+		// return; //no match for tid or target state is terminated.
+
+	//TODO: ENTIRE JOIN METHOD
+}
+
+
 void uthread_exit(){
 	ct->state = TERMINATED;
 	printf(1,"terminated tid: %d\n", ct->tid);
@@ -54,7 +78,7 @@ void uthread_exit(){
 	//if reached here, there are more threads in the process:
 	free(ct->stack);
 	sigsend(getpid(),SIGALRM);
-	while(1); //busywaits the rest of the quanta
+	while(1); //busywaits until thead schedular starts running
 }
 
 //FOR DEBUGGING:
@@ -83,7 +107,8 @@ void uthread_schedule(){
 	int espSnapShot;
 	register uint espVal asm("esp");
 	espSnapShot = espVal;	//because espVal is the actual register (shouldn't be changed)
-	espSnapShot += 20;		//8 for unknown reasons +4 for sigret ptr +4 for signum +4 for function jump
+	//espSnapShot += 20;
+	espSnapShot += 36;		//8 for unknown reasons +4 for sigret ptr +4 for signum +4 for function jump
 							//Add 16 if uthread_schedule contains printf
  	ct->tf = *((struct threadtrapframe*)espSnapShot);	//backup current thread's trapframe
 	//printf(1,"OLD Thread TF Registers:\n");
@@ -118,22 +143,19 @@ int getNextSpot(){
 int uthread_create(start_func threadEntry, void* arg){
 	int ttableLoc;
 	ttableLoc = getNextSpot();
-	//printf(1,"next spot in thread table is: %d\n",ttableLoc);
-	printf(1,"entry location (eip): %p\n",threadEntry);
 	struct thread* t = &threadTable[ttableLoc] ;
 
 	if (ttableLoc == -1)
 		return -1;
 
 	t->tid = nexttid;
+	t->wakeUpTime = -1;
 	nexttid++;
 
 	//STACK CREATION:
 	t->stack = malloc(STACKSZ);
-	printf(1,"stack ptr: %p\n",t->stack);
 	t->tf = ct->tf;
 	t->tf.esp = (uint)(t->stack + STACKSZ); 			//point to bottom of the stack
-	printf(1,"new thread esp: %p\n",t->tf.esp);
 	t->tf.ebp = t->tf.esp;
 	t->tf.eip = (uint)threadEntry;
 	t->indexInThreadtable = ttableLoc;
@@ -177,6 +199,6 @@ int uthread_init(){
 
 
 
-int uthred_self() {
+int uthread_self() {
 	return ct->tid;
 }

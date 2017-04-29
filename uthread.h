@@ -46,9 +46,12 @@ struct thread{
 	struct threadtrapframe tf;
 	int indexInThreadtable;
 	void* arg;
+	int wakeUpTime;
 };
 
-int uthred_self();
+int uthread_sleep(int);
+void uthread_join(int);
+int uthread_self();
 int chooseNextThread();
 int uthread_create(start_func, void*);
 void uthread_schedule(void);

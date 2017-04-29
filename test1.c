@@ -11,17 +11,23 @@ void fib(int n) {
   fib(n-2);
 }
 
+void alarmLooper(int signum) {
+	printf(1," RING \n");
+	alarm(3);
+}
+
 void thread1Main(){
 	int i;
-	
-	for (i=0;i <150; i++){
-		printf(1,"thread 1 (MT) is running now %d\n",i);
+	printf(1," thread 1 (MT) is running now 0\n");
+	uthread_sleep(40);
+
+	for (i=0;i <100; i++){
+		printf(1," thread 1 (MT) is running now %d\n ",i);
 	}
 }
 
 void thread2Main(){
-	int i;
-	
+	int i;	
 	for (i=0;i <100; i++){
 		printf(1,"thread 2 is running now %d\n",i);
 	}
@@ -36,18 +42,18 @@ void thread3Main(){
 
 void printHand(int sigNum){
 	printf(1,"printHand handler was invoked \n");
-
 }
 
 
 int main(int argc, char *argv[]){
-	//int i;
 	uthread_init();
 
 	uthread_create(&thread2Main, 0);
-	uthread_create(&thread3Main, 0);
-
+	//uthread_create(&thread3Main, 0);
+	//signal(14,&alarmLooper);
+	//sigsend(getpid(),14);
 	thread1Main();
+	//fib(40);
 	printf(1,"Main Exit \n");
 	exit();
 	return 0;
