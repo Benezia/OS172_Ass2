@@ -131,7 +131,6 @@ void extenededPrint() {
     cprintf("\ttrapno: %x\n", proc->tf->trapno);
     cprintf("\terr: %x\n", proc->tf->err);
 }
-
 void handleSignal() {
   int litSignal = getLitSignal();
   if (litSignal == -1)

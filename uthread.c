@@ -7,13 +7,14 @@
 struct thread threadTable[MAX_UTHREADS];
 int nexttid = 0;
 struct thread* ct;
-
+int threadSystemOn = 0;
 
 void initThreadTable(){
 	int i;
-
-	for (i=0;i<MAX_UTHREADS;i++)
+	for (i=0;i<MAX_UTHREADS;i++) {
 		threadTable[i].state = TERMINATED;
+		threadTable[i].blockedOnSemaphore = -1;
+	}
 }
 
 
@@ -24,7 +25,6 @@ int chooseNextThread(){
 		currloc = currloc%MAX_UTHREADS;
 		if (threadTable[currloc].state == READY || (threadTable[currloc].state == BLOCKED
 												&&  threadTable[currloc].wakeUpTime <= uptime())){
-
 			threadTable[currloc].state = READY;
 			return currloc;
 		}
@@ -46,6 +46,10 @@ int getThreadCount() {
 
 
 int uthread_sleep(int ticks) {
+	if (!threadSystemOn) {
+		printError();
+		return -1;
+	}
 	ct->wakeUpTime = ticks + uptime();
 	ct->state = BLOCKED;
 	sigsend(getpid(),SIGALRM);
@@ -53,9 +57,11 @@ int uthread_sleep(int ticks) {
 	return 0;
 }
 
-
-
 void uthread_join(int tid){
+	if (!threadSystemOn) {
+		printError();
+		return;
+	}
 	int i = 0;
 	for (i = 0; i < MAX_UTHREADS; i++) {
 		if (tid == threadTable[i].tid)
@@ -70,6 +76,10 @@ void uthread_join(int tid){
 
 
 void uthread_exit(){
+	if (!threadSystemOn) {
+		printError();
+		return;
+	}
 	ct->state = TERMINATED;
 	printf(1,"terminated tid: %d\n", ct->tid);
 	if (getThreadCount() == 0) { //is the last thread
@@ -142,6 +152,10 @@ int getNextSpot(){
 }
 
 int uthread_create(start_func threadEntry, void* arg){
+	if (!threadSystemOn) {
+		printError();
+		return -1;
+	}
 	int ttableLoc;
 	ttableLoc = getNextSpot();
 	struct thread* t = &threadTable[ttableLoc] ;
@@ -167,24 +181,10 @@ int uthread_create(start_func threadEntry, void* arg){
 	return 0;
 }
 
-void allocateMainTreadStack() {
-	ct->stack = malloc(STACKSZ);
-	printf(1,"MAIN THR stack ptr: %p\n",ct->stack);
-	ct->tf.esp = (uint)(ct->stack + STACKSZ); 
-	ct->tf.ebp = ct->tf.esp;
-	register uint espVal asm("esp");
-	register uint ebpVal asm("ebp");
-	uint esp_backup = espVal;
-	while (espVal != ebpVal){
-		*((uint*)ct->tf.esp) = *((uint*)espVal);
-		ct->tf.esp -= 4;
-		espVal += 4;
-	}
-	espVal = esp_backup;
-}
-
 int uthread_init(){
-
+	if (threadSystemOn)
+		return -1;
+	threadSystemOn = 1;
 	initThreadTable(threadTable);
 
 	threadTable[0].tid = nexttid;
@@ -198,8 +198,66 @@ int uthread_init(){
 	return 0;
 }
 
+void printError() {
+	printf(2, "Thread System Uninitialized");
+}
+
 
 
 int uthread_self() {
 	return ct->tid;
 }
+
+
+//===================== SEMAPHORES =====================
+#define MAX_BSEM 128
+static int semaphores[MAX_BSEM] = {[0 ... MAX_BSEM-1] = -1};
+
+int bsem_alloc(){
+	int i;
+	for (i = 0; i < MAX_BSEM; i++) {
+		if (semaphores[i] == -1) {
+			semaphores[i] = 1;
+			return i;
+		} 
+	}
+	return -1;
+}
+
+void bsem_free(int semNum){
+	semaphores[semNum] = -1;
+}
+
+
+void bsem_down(int semNum){
+	if (semaphores[semNum] == -1)
+		return; //uninitialized semaphore
+	if (semaphores[semNum] == 0) {
+		ct->blockedOnSemaphore = semNum;
+		ct->state = LOCKED;
+		sigsend(getpid(),SIGALRM);
+		while(ct->state != RUNNING); //USING BUSYWAIT! 
+	}
+	else
+		semaphores[semNum]--;
+}
+
+
+void bsem_up(int semNum){
+	if (semaphores[semNum] == -1)
+		return; //uninitialized semaphore
+	int i = 0;
+	for (i = 0; i < MAX_UTHREADS; i++) {
+		if (threadTable[i].blockedOnSemaphore == semNum) 
+			break;
+	}
+
+	if (i != MAX_UTHREADS) {
+		threadTable[i].blockedOnSemaphore = -1;
+		threadTable[i].state = READY;
+	}
+	else 
+		semaphores[semNum]++;
+}
+
+

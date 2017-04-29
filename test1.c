@@ -16,28 +16,36 @@ void alarmLooper(int signum) {
 	alarm(3);
 }
 
-void thread1Main(){
+void thread0Main(){
 	int i;
-	printf(1," thread 1 (MT) is running now 0\n");
-	uthread_sleep(40);
 
 	for (i=0;i <100; i++){
-		printf(1," thread 1 (MT) is running now %d\n ",i);
+		printf(1," thread 0 (MT) is running now %d\n ",i);
 	}
 }
 
-void thread2Main(){
+void thread1Main(){
 	int i;	
+	for (i=0;i <100; i++){
+		printf(1,"thread 1 is running now %d\n",i);
+	}
+}
+void thread2Main(){
+	int i;
+	
 	for (i=0;i <100; i++){
 		printf(1,"thread 2 is running now %d\n",i);
 	}
 }
-void thread3Main(){
+
+
+void semaphoreTest() {
 	int i;
-	
-	for (i=0;i <100; i++){
-		printf(1,"thread 3 is running now %d\n",i);
+	bsem_down(0);
+	for (i = 0; i < 50; i++) {
+		printf(1,"%d. tid: %d\n", i, uthread_self());
 	}
+	bsem_up(0);
 }
 
 void printHand(int sigNum){
@@ -47,14 +55,19 @@ void printHand(int sigNum){
 
 int main(int argc, char *argv[]){
 	uthread_init();
+	printf(1, "allocated: %d\n", bsem_alloc()); //allocate #0 sem
 
-	uthread_create(&thread2Main, 0);
+	uthread_create(&semaphoreTest, 0);
+	uthread_create(&semaphoreTest, 0);
+	uthread_create(&semaphoreTest, 0);
+
+	semaphoreTest();
+	//uthread_create(&thread2Main, 0);
 	//uthread_create(&thread3Main, 0);
 	//signal(14,&alarmLooper);
 	//sigsend(getpid(),14);
-	uthread_join(1);
-	thread1Main();
-	//fib(40);
+	//thread1Main();
+	fib(35);
 	printf(1,"Main Exit \n");
 	exit();
 	return 0;

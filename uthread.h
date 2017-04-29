@@ -5,7 +5,7 @@
 
 typedef void (*start_func)(void*);
 
-enum thread_state {RUNNING, READY, BLOCKED, TERMINATED}; 
+enum thread_state {RUNNING, READY, BLOCKED, LOCKED, TERMINATED}; 
 
 
 struct threadtrapframe {
@@ -47,6 +47,7 @@ struct thread{
 	int indexInThreadtable;
 	void* arg;
 	int wakeUpTime;
+	int blockedOnSemaphore;
 };
 
 int uthread_sleep(int);
@@ -58,4 +59,11 @@ void uthread_schedule(void);
 void alarmHandler(int);
 int uthread_init(void); 
 void uthread_exit();
+void printError();
+
+//SEMAPHORES:
+int bsem_alloc();
+void bsem_free(int);
+void bsem_down(int);
+void bsem_up(int);
 
