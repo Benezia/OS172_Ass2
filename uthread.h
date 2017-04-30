@@ -5,7 +5,7 @@
 
 typedef void (*start_func)(void*);
 
-enum thread_state {RUNNING, READY, BLOCKED, LOCKED, TERMINATED}; 
+enum thread_state {RUNNING, READY, SLEEPING, BLOCKED, TERMINATED}; 
 
 
 struct threadtrapframe {
@@ -48,6 +48,7 @@ struct thread{
 	void* arg;
 	int wakeUpTime;
 	int blockedOnSemaphore;
+	uint joinOnTid;
 };
 
 int uthread_sleep(int);

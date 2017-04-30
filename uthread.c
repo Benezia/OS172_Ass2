@@ -25,7 +25,7 @@ int chooseNextThread(){
 
 	for (i = 1; i <= MAX_UTHREADS; i++) {
 		currLoc = (startLoc + i)%MAX_UTHREADS;
-		if (threadTable[currLoc].state == BLOCKED &&  threadTable[currLoc].wakeUpTime <= uptime())
+		if (threadTable[currLoc].state == SLEEPING &&  threadTable[currLoc].wakeUpTime <= uptime())
 			threadTable[currLoc].state = READY;
 		if (threadTable[currLoc].state == READY){
 			return currLoc;
@@ -53,7 +53,7 @@ int uthread_sleep(int ticks) {
 		return -1;
 	}
 	ct->wakeUpTime = ticks + uptime();
-	ct->state = BLOCKED;
+	ct->state = SLEEPING;
 	sigsend(getpid(),SIGALRM);
 	return 0;
 }
@@ -70,8 +70,16 @@ void uthread_join(int tid){
 	}
 	if (i == MAX_UTHREADS || threadTable[i].state == TERMINATED)
 		return; //no match for tid or target state is terminated.
-	while (threadTable[i].state != TERMINATED) {
-		uthread_sleep(1);
+	ct->joinOnTid = threadTable[i].tid;
+	ct->state = BLOCKED;
+	sigsend(getpid(),SIGALRM);
+}
+
+void releaseBlockedThreads() {
+	int i;
+	for (i = 0; i < MAX_UTHREADS; i++) {
+		if (threadTable[i].joinOnTid == ct->tid)
+			threadTable[i].state = READY;
 	}
 }
 
@@ -87,6 +95,7 @@ void uthread_exit(){
 		exit();
 	}
 	//if reached here, there are more threads in the process:
+	releaseBlockedThreads();
 	if (ct->tid != 0)
 		free(ct->stack);
 	ct->state = TERMINATED;
@@ -236,7 +245,7 @@ void bsem_down(int semNum){
 		return; //uninitialized semaphore
 	if (semaphores[semNum] == 0) {
 		ct->blockedOnSemaphore = semNum;
-		ct->state = LOCKED;
+		ct->state = BLOCKED;
 		sigsend(getpid(),SIGALRM);
 	}
 	else

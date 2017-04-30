@@ -55,14 +55,11 @@ void printHand(int sigNum){
 
 int main(int argc, char *argv[]){
 	uthread_init();
-	bsem_alloc();
-	uthread_create(&semaphoreTest, 0);
-	uthread_create(&semaphoreTest, 0);
-	uthread_create(&semaphoreTest, 0);
-	semaphoreTest();
+	uthread_create(&thread1Main, 0);
+	uthread_join(1);
 
 	printf(1,"Main Exit \n");
-	//exit();
-	uthread_exit();
+	exit();
+	//uthread_exit();
 	return 0;
 } 
