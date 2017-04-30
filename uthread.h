@@ -1,4 +1,4 @@
-#define MAX_UTHREADS 6
+#define MAX_UTHREADS 64
 #define SIGALRM 14
 #define UTHREAD_QUANTA 5
 #define STACKSZ 4096

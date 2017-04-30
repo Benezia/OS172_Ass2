@@ -55,7 +55,6 @@ int uthread_sleep(int ticks) {
 	ct->wakeUpTime = ticks + uptime();
 	ct->state = BLOCKED;
 	sigsend(getpid(),SIGALRM);
-	while(ct->state != RUNNING);
 	return 0;
 }
 
@@ -92,7 +91,6 @@ void uthread_exit(){
 		free(ct->stack);
 	ct->state = TERMINATED;
 	sigsend(getpid(),SIGALRM);
-	while(1); //busywaits until thead schedular starts running
 }
 
 //FOR DEBUGGING:
@@ -129,7 +127,7 @@ void uthread_schedule(){
  	if (ct->state == RUNNING)
  		ct->state = READY; //prevent exited thread from running
 	nextThread = chooseNextThread();
- 	while (nextThread == -1){
+ 	while (nextThread == -1){ //busywaits until an available thread is found
  		nextThread = chooseNextThread();
  	}
  	ct = &threadTable[nextThread];
@@ -240,7 +238,6 @@ void bsem_down(int semNum){
 		ct->blockedOnSemaphore = semNum;
 		ct->state = LOCKED;
 		sigsend(getpid(),SIGALRM);
-		while(ct->state != RUNNING); //USING BUSYWAIT! 
 	}
 	else
 		semaphores[semNum]--;

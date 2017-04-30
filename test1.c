@@ -54,16 +54,13 @@ void printHand(int sigNum){
 
 
 int main(int argc, char *argv[]){
-	int i;
 	uthread_init();
-	for (i=0;i <50; i++){
-		printf(1,"T0 Run %d\n",i);
-		if (i == 30) {
-			uthread_create(&thread1Main,0);
-			//uthread_create(&thread2Main,0);
-			//uthread_sleep(50);
-		}
-	}	
+	bsem_alloc();
+	uthread_create(&semaphoreTest, 0);
+	uthread_create(&semaphoreTest, 0);
+	uthread_create(&semaphoreTest, 0);
+	semaphoreTest();
+
 	printf(1,"Main Exit \n");
 	//exit();
 	uthread_exit();

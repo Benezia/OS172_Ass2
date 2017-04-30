@@ -38,8 +38,7 @@ int alarm(int tickTime){
     return 0;
   }
   proc->pending |= sigBit;
-  proc->alarmStart = ticks;
-  proc->tickAmount = tickTime;
+  proc->alarmEnd = ticks+tickTime;
   release(&signalLock);
   return 0;
 }
@@ -82,9 +81,10 @@ int sigsend(int pid, int signum) {
     return -1;
   }
 
-  int signumBit = 1;
-  signumBit = signumBit << signum;
-  p->pending = p->pending | signumBit;
+  p->pending |= (1 << signum);
+  if (signum == 14) {
+    p->alarmEnd = 0;
+  }
   release(&signalLock);
   return 0;
 }
@@ -113,7 +113,7 @@ int getLitSignal(void){
   for (i = 0;i<NUMSIG;i++){
     int sigBit = 1 << i;
     if (proc->pending & sigBit){
-      if (i == 14 && proc->alarmStart + proc->tickAmount > ticks)
+      if (i == 14 && proc->alarmEnd > ticks)
         continue;
       proc->pending &= ~sigBit;
       return i;
