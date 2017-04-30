@@ -17,28 +17,30 @@ void initThreadTable(){
 	}
 }
 
-
 int chooseNextThread(){
-	int i = 0;
-	int currloc = ct->indexInThreadtable + 1;
-	while (i<MAX_UTHREADS){
-		currloc = currloc%MAX_UTHREADS;
-		if (threadTable[currloc].state == READY || (threadTable[currloc].state == BLOCKED
-												&&  threadTable[currloc].wakeUpTime <= uptime())){
-			threadTable[currloc].state = READY;
-			return currloc;
+	int i = 0; 
+
+	int currLoc;
+	int startLoc = ct->indexInThreadtable;
+
+	for (i = 1; i <= MAX_UTHREADS; i++) {
+		currLoc = (startLoc + i)%MAX_UTHREADS;
+		if (threadTable[currLoc].state == BLOCKED &&  threadTable[currLoc].wakeUpTime <= uptime())
+			threadTable[currLoc].state = READY;
+		if (threadTable[currLoc].state == READY){
+			return currLoc;
 		}
-		currloc++;
-		i++;
 	}
-	return ct->indexInThreadtable;
+	if (ct->state == RUNNING)
+		return startLoc; //let current thread run again
+	return -1; //no threads to run
 }
 
 int getThreadCount() {
 	int threadCount = 0;
 	int i;
 	for (i = 0; i < MAX_UTHREADS; i++) {
-		if (threadTable[i].state != TERMINATED)
+		if (threadTable[i].state != TERMINATED) 
 			threadCount++;
 	}
 	return threadCount;
@@ -80,14 +82,15 @@ void uthread_exit(){
 		printError();
 		return;
 	}
-	ct->state = TERMINATED;
-	printf(1,"terminated tid: %d\n", ct->tid);
-	if (getThreadCount() == 0) { //is the last thread
-		free(ct->stack);
+	if (getThreadCount() == 1) { //is the last thread
+		if (ct->tid != 0) 
+			free(ct->stack);
 		exit();
 	}
 	//if reached here, there are more threads in the process:
-	free(ct->stack);
+	if (ct->tid != 0)
+		free(ct->stack);
+	ct->state = TERMINATED;
 	sigsend(getpid(),SIGALRM);
 	while(1); //busywaits until thead schedular starts running
 }
@@ -111,7 +114,6 @@ void printTrapframe() {
 	printf(1,"\tebp: %x\n\n", ct->tf.ebp);
 }
 
-
 void uthread_schedule(){
 
 	int nextThread;
@@ -126,8 +128,10 @@ void uthread_schedule(){
  	//printTrapframe();
  	if (ct->state == RUNNING)
  		ct->state = READY; //prevent exited thread from running
-
- 	nextThread = chooseNextThread();
+	nextThread = chooseNextThread();
+ 	while (nextThread == -1){
+ 		nextThread = chooseNextThread();
+ 	}
  	ct = &threadTable[nextThread];
 	//printf(1,"New thread was chosen: %d\n", nextThread);
 	//printf(1,"NEW Thread TF Registers:\n");
@@ -255,7 +259,7 @@ void bsem_up(int semNum){
 	if (i != MAX_UTHREADS) {
 		threadTable[i].blockedOnSemaphore = -1;
 		threadTable[i].state = READY;
-	}
+		}
 	else 
 		semaphores[semNum]++;
 }

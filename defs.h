@@ -114,6 +114,7 @@ int             fork(void);
 int             growproc(int);
 int             kill(int);
 void            pinit(void);
+void			siginit(void);
 void            procdump(void);
 void            scheduler(void) __attribute__((noreturn));
 void            sched(void);

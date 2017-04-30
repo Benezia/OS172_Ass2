@@ -24,16 +24,23 @@ static void wakeup1(void *chan);
 void pinit(void){
   initlock(&ptable.lock, "ptable");
 }
-
+struct spinlock signalLock;
+void siginit(void){
+  initlock(&signalLock, "signalock");
+}
 
 int alarm(int tickTime){ 
+  acquire(&signalLock);
+  int sigBit = 1<<14;
   if (tickTime == 0) {
-    proc->pending &= ~(1<<14);
+    proc->pending &= ~sigBit;
+    release(&signalLock);
     return 0;
   }
-  proc->pending |= (1<<14);
+  proc->pending |= sigBit;
   proc->alarmStart = ticks;
   proc->tickAmount = tickTime;
+  release(&signalLock);
   return 0;
 }
 
@@ -57,8 +64,11 @@ sighandler_t signal (int signum, sighandler_t handler){
 }
 
 int sigsend(int pid, int signum) {
-  if (signum < 0 || signum > 31)
+  acquire(&signalLock);
+  if (signum < 0 || signum > 31) {
+    release(&signalLock);
     return -1;
+  }
   acquire(&ptable.lock);
   struct proc *p = 0;
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
@@ -67,23 +77,28 @@ int sigsend(int pid, int signum) {
   }
   release(&ptable.lock);
 
-  if (p == 0)
+  if (p == 0) {
+    release(&signalLock);
     return -1;
+  }
 
   int signumBit = 1;
   signumBit = signumBit << signum;
   p->pending = p->pending | signumBit;
+  release(&signalLock);
   return 0;
 }
 void printTrapframe();
 void extenededPrint();
 int sigreturn(void) {
+  acquire(&signalLock);
   proc->tf->esp += 4; //Removes signum from stack
   struct trapframe *trapFrameToRestore = (struct trapframe*)proc->tf->esp;
   *proc->tf = *trapFrameToRestore;
   //cprintf("KERNEL TF Registers (after invokation):\n");
   //extenededPrint();
   //printTrapframe();
+  release(&signalLock);
   return 0;
 }
 
@@ -132,12 +147,16 @@ void extenededPrint() {
     cprintf("\terr: %x\n", proc->tf->err);
 }
 void handleSignal() {
+  acquire(&signalLock);
   int litSignal = getLitSignal();
-  if (litSignal == -1)
+  if (litSignal == -1) {
+    release(&signalLock);
     return;
+  }
 
   if (proc->signals[litSignal] == &defaultHandler){
     defaultHandler(litSignal);
+    release(&signalLock);
     return;
   }
   //cprintf("KERNEL TF Registers (before invokation):\n");
@@ -159,6 +178,7 @@ void handleSignal() {
   proc->tf->esp -= 4;                                 //size of handler ptr
   *((uint*)proc->tf->esp) = funcAddr;                 //Put sigreturn UM address on stack
   proc->tf->eip = (uint)handler;                      //rewire eip to handler address
+  release(&signalLock);
 }
 
 
@@ -313,7 +333,7 @@ fork(void)
 
   for (i = 0; i < NUMSIG; i++)
     np->signals[i] = proc-> signals[i]; //DEEP COPY SIGNALS FROM PARENT
-
+  np->pending = 0; //lit signels starts over
 
   acquire(&ptable.lock);
 
