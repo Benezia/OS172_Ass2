@@ -169,9 +169,10 @@ int uthread_create(start_func threadEntry, void* arg){
 	t->tf.ebp = t->tf.esp;
 	t->tf.eip = (uint)threadEntry;
 	t->indexInThreadtable = ttableLoc;
+	t->tf.esp -= 4; 									//make room for args;
+	*((uint *)t->tf.esp) = (uint)arg;							//push args to stack
 	t->tf.esp -= 4; 									//make room for the return address;
 	*((uint *)t->tf.esp) = (uint)&uthread_exit;			//push return address to stack
-	t->arg = arg;
 	t->state = READY;
 	return 0;
 }

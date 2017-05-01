@@ -32,16 +32,15 @@ void thread1Main(){
 		printf(1,"T1 Run %d\n",i);
 	}
 }
-void thread2Main(){
-	int i;
+void thread2Main(void* arg){
+	uthread_create(thread0Main,0);
+	printf(1,"arg is: %s\n",arg);
 	
-	for (i=0;i <50; i++){
-		printf(1,"T2 Run %d\n",i);
-	}
+
 }
 
 
-void semaphoreTest(struct counting_semaphore * cSem) {
+void semaphoreTest(void* cSem) {
 	int i;
 	down(cSem);
 	for (i = 0; i < 50; i++) {
@@ -52,6 +51,8 @@ void semaphoreTest(struct counting_semaphore * cSem) {
 
 void printHand(int sigNum){
 	printf(1,"printHand handler was invoked \n");
+
+
 }
 
 
@@ -62,11 +63,14 @@ int main(int argc, char *argv[]){
 
  	struct counting_semaphore * cSem = allocSem(2);
 	uthread_init();
-	uthread_create((start_func)&semaphoreTest, &cSem);
+	uthread_create(thread2Main, cSem);
+	uthread_create(semaphoreTest, cSem);
+	uthread_create(semaphoreTest, cSem);
 
  	semaphoreTest(cSem);
 
-
+	uthread_join(3);
+	freeSem(cSem);
 	printf(1,"Main Exit \n");
 	exit();
 	//uthread_exit();

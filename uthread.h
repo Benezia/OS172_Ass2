@@ -45,7 +45,6 @@ struct thread{
 	enum thread_state state;  
 	struct threadtrapframe tf;
 	int indexInThreadtable;
-	void* arg;
 	int wakeUpTime;
 	int blockedOnSemaphore;
 	uint joinOnTid;
