@@ -9,6 +9,11 @@ int nexttid = 0;
 struct thread* ct;
 int threadSystemOn = 0;
 
+
+void printError() {
+	printf(2, "Thread System Uninitialized");
+}
+
 void initThreadTable(){
 	int i;
 	for (i=0;i<MAX_UTHREADS;i++) {
@@ -102,27 +107,7 @@ void uthread_exit(){
 	sigsend(getpid(),SIGALRM);
 }
 
-//FOR DEBUGGING:
-void printTrapframe() {
-	printf(1,"\tss: %x\n", ct->tf.ss);
-    printf(1,"\tcs: %x\n", ct->tf.cs);
-    printf(1,"\tds: %x\n", ct->tf.ds);
-    printf(1,"\tes: %x\n", ct->tf.es);
-    printf(1,"\tfs: %x\n", ct->tf.fs);
-    printf(1,"\tgs: %x\n", ct->tf.gs);
-    printf(1,"\ttrapno: %x\n", ct->tf.trapno);
-    printf(1,"\terr: %x\n", ct->tf.err);
-	printf(1,"\tebx: %x\n", ct->tf.ebx);
-	printf(1,"\tedx: %x\n", ct->tf.edx);
-	printf(1,"\tecx: %x\n", ct->tf.ecx);
-	printf(1,"\teax: %x\n", ct->tf.eax);
-	printf(1,"\teip: %x\n", ct->tf.eip);
-	printf(1,"\tesp: %x\n", ct->tf.esp);
-	printf(1,"\tebp: %x\n\n", ct->tf.ebp);
-}
-
 void uthread_schedule(){
-
 	int nextThread;
 	int espSnapShot;
 	register uint espVal asm("esp");
@@ -175,7 +160,6 @@ int uthread_create(start_func threadEntry, void* arg){
 		return -1;
 
 	t->tid = nexttid;
-	t->wakeUpTime = -1;
 	nexttid++;
 
 	//STACK CREATION:
@@ -207,10 +191,6 @@ int uthread_init(){
 	sigsend(getpid(),SIGALRM);
 
 	return 0;
-}
-
-void printError() {
-	printf(2, "Thread System Uninitialized");
 }
 
 
@@ -269,5 +249,4 @@ void bsem_up(int semNum){
 	else 
 		semaphores[semNum]++;
 }
-
 

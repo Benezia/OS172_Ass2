@@ -3,6 +3,8 @@
 #include "user.h"
 #include "fs.h"
 #include "uthread.h"
+#include "usemaphore.h"
+
 
 void fib(int n) {
   if (n <= 1)
@@ -19,7 +21,7 @@ void alarmLooper(int signum) {
 void thread0Main(){
 	int i;
 
-	for (i=0;i <50; i++){
+	for (i=0;i <200; i++){
 		printf(1,"T0 Run %d\n",i);
 	}
 }
@@ -39,13 +41,13 @@ void thread2Main(){
 }
 
 
-void semaphoreTest() {
+void semaphoreTest(struct counting_semaphore * cSem) {
 	int i;
-	bsem_down(0);
+	down(cSem);
 	for (i = 0; i < 50; i++) {
 		printf(1,"%d. tid: %d\n", i, uthread_self());
 	}
-	bsem_up(0);
+	up(cSem);
 }
 
 void printHand(int sigNum){
@@ -54,9 +56,16 @@ void printHand(int sigNum){
 
 
 int main(int argc, char *argv[]){
+	//signal(14,&alarmLooper);
+	//sigsend(getpid(),14);
+	//thread0Main();
+
+ 	struct counting_semaphore * cSem = allocSem(2);
 	uthread_init();
-	uthread_create(&thread1Main, 0);
-	uthread_join(1);
+	uthread_create((start_func)&semaphoreTest, &cSem);
+
+ 	semaphoreTest(cSem);
+
 
 	printf(1,"Main Exit \n");
 	exit();

@@ -54,17 +54,12 @@ struct thread{
 int uthread_sleep(int);
 void uthread_join(int);
 int uthread_self();
-int chooseNextThread();
 int uthread_create(start_func, void*);
-void uthread_schedule(void);
-void alarmHandler(int);
 int uthread_init(void); 
 void uthread_exit();
-void printError();
 
 //SEMAPHORES:
 int bsem_alloc();
 void bsem_free(int);
 void bsem_down(int);
 void bsem_up(int);
-
