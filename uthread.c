@@ -109,26 +109,21 @@ void uthread_exit(){
 
 void uthread_schedule(){
 	int nextThread;
-	int espSnapShot;
-	register uint espVal asm("esp");
-	espSnapShot = espVal;	//because espVal is the actual register (shouldn't be changed)
-	//espSnapShot += 20;
-	espSnapShot += 36;		//8 for unknown reasons +4 for sigret ptr +4 for signum +4 for function jump
-							//Add 16 if uthread_schedule contains printf
- 	ct->tf = *((struct threadtrapframe*)espSnapShot);	//backup current thread's trapframe
-	//printf(1,"OLD Thread TF Registers:\n");
- 	//printTrapframe();
+	int ebpSnapshot;
+
+	register uint ebpVal asm("ebp");
+	ebpSnapshot = ebpVal;
+
+	ebpSnapshot += 12;				//+4 for sigret ptr +4 for signum +4 for function jump
+ 	ct->tf = *((struct threadtrapframe*)ebpSnapshot);	//backup current thread's trapframe
  	if (ct->state == RUNNING)
- 		ct->state = READY; //prevent exited thread from running
+ 		ct->state = READY; 			//prevent exited thread from running
 	nextThread = chooseNextThread();
- 	while (nextThread == -1){ //busywaits until an available thread is found
+ 	while (nextThread == -1) 		//busywaits until an available thread is found
  		nextThread = chooseNextThread();
- 	}
+ 	
  	ct = &threadTable[nextThread];
-	//printf(1,"New thread was chosen: %d\n", nextThread);
-	//printf(1,"NEW Thread TF Registers:\n");
- 	//printTrapframe();
- 	*((struct threadtrapframe*)espSnapShot) = ct->tf;	//load next thread's trapframe
+ 	*((struct threadtrapframe*)ebpSnapshot) = ct->tf;	//load next thread's trapframe
  	ct->state = RUNNING;
 
 	alarm(UTHREAD_QUANTA);

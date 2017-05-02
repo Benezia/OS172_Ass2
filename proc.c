@@ -125,7 +125,6 @@ void handleSignal(struct trapframe *tf) {
   uint funcAddr = proc->tf->esp;
 
   proc->tf->esp -= sizeof(struct trapframe);          //Make room for trapframe backup
-
   *((struct trapframe*)proc->tf->esp) = *(proc->tf);  //BACKUP TRAPFRAME ON STACK
   ((struct trapframe*)proc->tf->esp)->esp = origESP;  //Backup the original esp
   proc->tf->esp -= 4;                                 //size of signum
