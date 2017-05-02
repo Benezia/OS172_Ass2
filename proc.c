@@ -24,22 +24,15 @@ static void wakeup1(void *chan);
 void pinit(void){
   initlock(&ptable.lock, "ptable");
 }
-struct spinlock signalLock;
-void siginit(void){
-  initlock(&signalLock, "signalock");
-}
 
 int alarm(int tickTime){ 
-  acquire(&signalLock);
   int sigBit = 1<<14;
   if (tickTime == 0) {
     proc->pending &= ~sigBit;
-    release(&signalLock);
     return 0;
   }
   proc->pending |= sigBit;
   proc->alarmEnd = ticks+tickTime;
-  release(&signalLock);
   return 0;
 }
 
@@ -58,26 +51,20 @@ sighandler_t signal (int signum, sighandler_t handler){
     return (sighandler_t)-1;
   sighandler_t oldHandler = proc->signals[signum];
   proc->signals[signum] = handler;
-  //cprintf("placed func %p in %d instead of %p", handler, signum, oldHandler);
   return oldHandler;
 }
 
 int sigsend(int pid, int signum) {
-  acquire(&signalLock);
   if (signum < 0 || signum > 31) {
-    release(&signalLock);
     return -1;
   }
-  acquire(&ptable.lock);
   struct proc *p = 0;
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
     if (p->pid == pid)
       break;
   }
-  release(&ptable.lock);
 
   if (p == 0) {
-    release(&signalLock);
     return -1;
   }
 
@@ -85,31 +72,21 @@ int sigsend(int pid, int signum) {
   if (signum == 14) {
     p->alarmEnd = 0;
   }
-  release(&signalLock);
   return 0;
 }
 void printTrapframe();
 void extenededPrint();
+
 int sigreturn(void) {
-  acquire(&signalLock);
   proc->tf->esp += 4; //Removes signum from stack
   struct trapframe *trapFrameToRestore = (struct trapframe*)proc->tf->esp;
   *proc->tf = *trapFrameToRestore;
-  //cprintf("KERNEL TF Registers (after invokation):\n");
-  //extenededPrint();
-  //printTrapframe();
-  release(&signalLock);
   return 0;
 }
 
-//======== HELPER SIGNAL FUNCTIONS =========
 
 int getLitSignal(void){
-  if (proc == 0)
-    return -1;
-
   int i;
-
   for (i = 0;i<NUMSIG;i++){
     int sigBit = 1 << i;
     if (proc->pending & sigBit){
@@ -119,7 +96,6 @@ int getLitSignal(void){
       return i;
     }
   }
-
   return -1;
  }
 
@@ -127,41 +103,20 @@ extern void* start_sigreturn_label;
 extern void* end_sigreturn_label;
 
 
-void printTrapframe() {
-    cprintf("\tebx: %x\n", proc->tf->ebx);
-    cprintf("\tedx: %x\n", proc->tf->edx);
-    cprintf("\tecx: %x\n", proc->tf->ecx);
-    cprintf("\teax: %x\n", proc->tf->eax);
-    cprintf("\teip: %x\n", proc->tf->eip);
-    cprintf("\tesp: %x\n", proc->tf->esp);
-    cprintf("\tebp: %x\n\n", proc->tf->ebp);
-}
-void extenededPrint() {
-    cprintf("\tss: %x\n", proc->tf->ss);
-    cprintf("\tcs: %x\n", proc->tf->cs);
-    cprintf("\tds: %x\n", proc->tf->ds);
-    cprintf("\tes: %x\n", proc->tf->es);
-    cprintf("\tfs: %x\n", proc->tf->fs);
-    cprintf("\tgs: %x\n", proc->tf->gs);
-    cprintf("\ttrapno: %x\n", proc->tf->trapno);
-    cprintf("\terr: %x\n", proc->tf->err);
-}
-void handleSignal() {
-  acquire(&signalLock);
+void handleSignal(struct trapframe *tf) {
+  if (proc == 0 || (tf->cs&3) == 0)
+    return; //proc is uninitialized or we're heading back to kernel mode from trapasm
+
   int litSignal = getLitSignal();
   if (litSignal == -1) {
-    release(&signalLock);
-    return;
+    return; //No signals were found
   }
 
   if (proc->signals[litSignal] == &defaultHandler){
-    defaultHandler(litSignal);
-    release(&signalLock);
+    defaultHandler(litSignal); //handler is the default handler
     return;
   }
-  //cprintf("KERNEL TF Registers (before invokation):\n");
-  //extenededPrint();
-  //printTrapframe();
+
   sighandler_t handler = proc->signals[litSignal];
   uint origESP = proc->tf->esp;                       //Backup the original esp
   int funcSize = (uint)&end_sigreturn_label - (uint)&start_sigreturn_label;
@@ -178,12 +133,7 @@ void handleSignal() {
   proc->tf->esp -= 4;                                 //size of handler ptr
   *((uint*)proc->tf->esp) = funcAddr;                 //Put sigreturn UM address on stack
   proc->tf->eip = (uint)handler;                      //rewire eip to handler address
-  release(&signalLock);
 }
-
-
-//======== END OF HELPER SIGNAL FUNCTIONS =========
-
 
 
 //PAGEBREAK: 32

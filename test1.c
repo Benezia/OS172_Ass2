@@ -13,30 +13,25 @@ void fib(int n) {
   fib(n-2);
 }
 
-void alarmLooper(int signum) {
-	printf(1," RING \n");
-	alarm(2);
-}
-
 void thread0Main(){
 	int i;
 
 	for (i=0;i <200; i++){
-		printf(1,"T0 Run %d\n",i);
+		printf(1,"Thread0 is Running %d\n",i);
 	}
 }
 
-void thread1Main(){
+void thread1Main(void* arg){
 	int i;	
-	for (i=0;i <50; i++){
-		printf(1,"T1 Run %d\n",i);
+	for (i=0;i <200; i++){
+		printf(1,"Thread1 is Running %d\n",i);
 	}
 }
 void thread2Main(void* arg){
-	uthread_create(thread0Main,0);
-	printf(1,"arg is: %s\n",arg);
-	
-
+	int i;	
+	for (i=0;i <200; i++){
+		printf(1,"Thread2 is Running %d\n",i);
+	}
 }
 
 
@@ -57,20 +52,11 @@ void printHand(int sigNum){
 
 
 int main(int argc, char *argv[]){
-	//signal(14,&alarmLooper);
-	//sigsend(getpid(),14);
-	//thread0Main();
-
- 	struct counting_semaphore * cSem = allocSem(2);
 	uthread_init();
-	uthread_create(thread2Main, cSem);
-	uthread_create(semaphoreTest, cSem);
-	uthread_create(semaphoreTest, cSem);
-
- 	semaphoreTest(cSem);
-
-	uthread_join(3);
-	freeSem(cSem);
+	uthread_create(thread1Main, 0);
+	uthread_create(thread2Main, 0);
+	thread0Main();
+	uthread_join(2);
 	printf(1,"Main Exit \n");
 	exit();
 	//uthread_exit();

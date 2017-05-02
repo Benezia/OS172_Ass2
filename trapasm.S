@@ -27,7 +27,9 @@ alltraps:
 .globl trapret
 
 trapret:
-  call handleSignal      # Pushes trapframe to stack and updates eip
+  pushl %esp
+  call handleSignal      # Check for signals to handle (needs TF arg for CS register check)
+  addl $4, %esp
   popal
   popl %gs
   popl %fs
