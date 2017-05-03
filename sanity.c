@@ -5,13 +5,14 @@
 #include "uthread.h"
 #include "usemaphore.h"
 
-#define BUFSZ 20
-#define ITMNO 200
+#define BUFSZ 100
+#define ITMNO 1000
 
 int queue[BUFSZ];
 
 int out;
 int in;
+int sum; //for debugging only
 struct counting_semaphore * empty;
 struct counting_semaphore * full;
 struct counting_semaphore * mutex;
@@ -19,18 +20,23 @@ struct counting_semaphore * mutex;
 int removeItem(){
 	int retNum = queue[out];
 	out = (out + 1) % BUFSZ;
+	sum--;
+	printf(1,"Item %d removed from %d (%d)\n",retNum, out, sum);
 	return retNum;
 }
 
 void addItem(int item){
 	queue[in] = item;
 	in = (in + 1) % BUFSZ;
+	sum++;
+	printf(1,"Item %d added in %d (%d)\n",item, in, sum);
 }
 
 
 void producer(void* arg){
 	int i;
-	printf(1,"producer-start\n");
+	printf(1,"Producer start\n");
+	uthread_sleep(200);
 	for (i = 1; i <= ITMNO; i++){
 		down(empty);
 		down(mutex);
@@ -40,6 +46,7 @@ void producer(void* arg){
 	}
 }
 void consumer(void* arg){
+	printf(1,"Consumer start\n");
 	while (1){
 		down(full);
 		down(mutex);
@@ -87,13 +94,15 @@ int main(int argc, char *argv[]){
 	full = allocSem(0);
 	mutex = allocSem(1);
 
-
-	//printf(1,"empty: %d, full: %d, mutex %d\n",empty,full,mutex);
+	
+	uthread_create(&consumer,0);
+	uthread_create(&consumer,0);
+	uthread_create(&consumer,0);
 	uthread_create(&producer,0);
-	uthread_create(&consumer,0);
-	uthread_create(&consumer,0);
-	uthread_create(&consumer,0);
-	uthread_exit();
-	// //exit();
+	uthread_join(1);
+	uthread_join(2);
+	uthread_join(3);
+	uthread_join(4);
+	exit();
 	return 0;
 } 
