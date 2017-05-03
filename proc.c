@@ -59,10 +59,12 @@ int sigsend(int pid, int signum) {
     return -1;
   }
   struct proc *p = 0;
+	acquire(&ptable.lock);
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
     if (p->pid == pid)
       break;
   }
+  release(&ptable.lock);
 
   if (p == 0) {
     return -1;
