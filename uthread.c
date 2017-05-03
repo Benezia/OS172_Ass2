@@ -81,17 +81,6 @@ void uthread_join(int tid){
 	sigsend(getpid(),SIGALRM);
 }
 
-void releaseBlockedThreads() {
-	int i;
-	for (i = 0; i < MAX_UTHREADS; i++) {
-		if (threadTable[i].joinOnTid == ct->tid) {
-			threadTable[i].joinOnTid = -1;
-			threadTable[i].state = READY;
-		}
-	}
-}
-
-
 void uthread_exit(){
 	if (!threadSystemOn) {
 		printError();
@@ -104,13 +93,12 @@ void uthread_exit(){
 		exit();
 	}
 	//if reached here, there are more threads in the process:
-	//releaseBlockedThreads();
 
 	int i;
 	for (i = 0; i < MAX_UTHREADS; i++) {
 		if (threadTable[i].joinOnTid == ct->tid) {
 			threadTable[i].joinOnTid = -1;
-			threadTable[i].state = READY;
+			threadTable[i].state = READY; //release blocked threads (if any)
 		}	
 	}
 
@@ -229,6 +217,13 @@ int bsem_alloc(){
 }
 
 void bsem_free(int semNum){
+	int i;
+	for (i = 0; i < MAX_UTHREADS; i++) {
+		if (threadTable[i].blockedOnSemaphore == semNum) {
+			threadTable[i].blockedOnSemaphore = -1;
+			threadTable[i].state = READY;	//release all blocked threads
+		}
+	}
 	semaphores[semNum] = -1;
 }
 
@@ -251,15 +246,13 @@ void bsem_up(int semNum){
 		return; //uninitialized semaphore
 	int i = 0;
 	for (i = 0; i < MAX_UTHREADS; i++) {
-		if (threadTable[i].blockedOnSemaphore == semNum) 
+		if (threadTable[i].blockedOnSemaphore == semNum)  {
+			threadTable[i].blockedOnSemaphore = -1;
+			threadTable[i].state = READY; //release blocked thread
 			break;
-	}
-
-	if (i != MAX_UTHREADS) {
-		threadTable[i].blockedOnSemaphore = -1;
-		threadTable[i].state = READY;
 		}
-	else 
+	}
+	if (i == MAX_UTHREADS) //no blocked threads were found
 		semaphores[semNum]++;
 }
 

@@ -11,6 +11,7 @@
 int queue[BUFSZ];
 int out;
 int in;
+int finishFlag;
 struct counting_semaphore * empty;
 struct counting_semaphore * full;
 struct counting_semaphore * mutex;
@@ -39,21 +40,25 @@ void producer(void* arg){
 }
 
 void consumer(void* arg){
-	while (1){
+	while (!finishFlag){
 		down(full);
+		if (finishFlag) 
+			break;
 		down(mutex);
 		int item = removeItem();
+		finishFlag = (item == ITMNO);
+		if (finishFlag)
+			freeSem(full);	//Releases blocked threads on full (if any)
 		up(mutex);
 		up(empty);
 		uthread_sleep(item);
 		printf(1, "Thread %d slept for %d ticks.\n", uthread_self(), item);
-		if (item == ITMNO)
-			exit();
 	}
 }
 
 int main(int argc, char *argv[]){
 	uthread_init();
+
 	empty = allocSem(BUFSZ);
 	full = allocSem(0);
 	mutex = allocSem(1);
@@ -66,10 +71,8 @@ int main(int argc, char *argv[]){
 	uthread_join(2);
 	uthread_join(3);
 	uthread_join(4);
-
 	freeSem(empty);
-	freeSem(full);
 	freeSem(mutex);
-	exit();
+	uthread_exit();
 	return 0;
 } 
