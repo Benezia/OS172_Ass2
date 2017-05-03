@@ -13,6 +13,8 @@
 		return 0; //There are no binary semaphores available to implement a counting semaphore
 	semPtr->binSemNum1 = binSemNum1;
 	semPtr->binSemNum2 = binSemNum2;
+	if (enterVal == 0)
+		bsem_down(semPtr->binSemNum2); //bSem init val = min(1, enterVal);
 	semPtr->value = enterVal;
  	return semPtr;
  }
