@@ -74,8 +74,6 @@ int sigsend(int pid, int signum) {
   }
   return 0;
 }
-void printTrapframe();
-void extenededPrint();
 
 int sigreturn(void) {
   proc->tf->esp += 4; //Removes signum from stack

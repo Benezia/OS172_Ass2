@@ -11,7 +11,7 @@ int threadSystemOn = 0;
 
 
 void printError() {
-	printf(2, "Thread System Uninitialized");
+	printf(2, "Thread System Uninitialized\n");
 }
 
 void initThreadTable(){
@@ -19,6 +19,7 @@ void initThreadTable(){
 	for (i=0;i<MAX_UTHREADS;i++) {
 		threadTable[i].state = TERMINATED;
 		threadTable[i].blockedOnSemaphore = -1;
+		threadTable[i].joinOnTid = -1;
 	}
 }
 
@@ -83,8 +84,10 @@ void uthread_join(int tid){
 void releaseBlockedThreads() {
 	int i;
 	for (i = 0; i < MAX_UTHREADS; i++) {
-		if (threadTable[i].joinOnTid == ct->tid)
+		if (threadTable[i].joinOnTid == ct->tid) {
+			threadTable[i].joinOnTid = -1;
 			threadTable[i].state = READY;
+		}
 	}
 }
 
@@ -94,13 +97,25 @@ void uthread_exit(){
 		printError();
 		return;
 	}
+
 	if (getThreadCount() == 1) { //is the last thread
 		if (ct->tid != 0) 
 			free(ct->stack);
 		exit();
 	}
 	//if reached here, there are more threads in the process:
-	releaseBlockedThreads();
+	//releaseBlockedThreads();
+
+	int i;
+	for (i = 0; i < MAX_UTHREADS; i++) {
+		if (threadTable[i].joinOnTid == ct->tid) {
+			threadTable[i].joinOnTid = -1;
+			threadTable[i].state = READY;
+		}	
+	}
+
+
+
 	if (ct->tid != 0)
 		free(ct->stack);
 	ct->state = TERMINATED;
@@ -158,6 +173,7 @@ int uthread_create(start_func threadEntry, void* arg){
 	nexttid++;
 
 	//STACK CREATION:
+	t->joinOnTid = -1;
 	t->stack = malloc(STACKSZ);
 	t->tf = ct->tf;
 	t->tf.esp = (uint)(t->stack + STACKSZ); 			//point to bottom of the stack
@@ -182,6 +198,7 @@ int uthread_init(){
 	nexttid++;
 	threadTable[0].indexInThreadtable = 0;
 	threadTable[0].state = RUNNING;
+	threadTable[0].joinOnTid = -1;
 	ct = &threadTable[0];
 	signal(SIGALRM,&alarmHandler);
 	sigsend(getpid(),SIGALRM);
