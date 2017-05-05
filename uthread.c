@@ -237,7 +237,7 @@ void bsem_down(int semNum){
 		sigsend(getpid(),SIGALRM);
 	}
 	else
-		semaphores[semNum]--;
+		semaphores[semNum] = 0;
 }
 
 
@@ -253,6 +253,6 @@ void bsem_up(int semNum){
 		}
 	}
 	if (i == MAX_UTHREADS) //no blocked threads were found
-		semaphores[semNum]++;
+		semaphores[semNum] = 1;
 }
 
