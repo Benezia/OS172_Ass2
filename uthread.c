@@ -205,6 +205,7 @@ int uthread_self() {
 #define MAX_BSEM 128
 static int semaphores[MAX_BSEM] = {[0 ... MAX_BSEM-1] = -1};
 
+
 int bsem_alloc(){
 	int i;
 	for (i = 0; i < MAX_BSEM; i++) {
@@ -231,19 +232,23 @@ void bsem_free(int semNum){
 void bsem_down(int semNum){
 	if (semaphores[semNum] == -1)
 		return; //uninitialized semaphore
+        alarm(0);       //Disable uthread schedular.
 	if (semaphores[semNum] == 0) {
 		ct->blockedOnSemaphore = semNum;
 		ct->state = BLOCKED;
 		sigsend(getpid(),SIGALRM);
 	}
-	else
+	else {
 		semaphores[semNum] = 0;
+                alarm(UTHREAD_QUANTA);  //Enable uthread schedular
+        }
 }
 
 
 void bsem_up(int semNum){
 	if (semaphores[semNum] == -1)
 		return; //uninitialized semaphore
+        alarm(0);   //Disable uthread schedular
 	int i = 0;
 	for (i = 0; i < MAX_UTHREADS; i++) {
 		if (threadTable[i].blockedOnSemaphore == semNum)  {
@@ -254,5 +259,5 @@ void bsem_up(int semNum){
 	}
 	if (i == MAX_UTHREADS) //no blocked threads were found
 		semaphores[semNum] = 1;
+        alarm(UTHREAD_QUANTA);  //Enable uthread schedular
 }
-
